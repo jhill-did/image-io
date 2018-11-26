@@ -78,13 +78,13 @@ const typeMap = [
   { name: 'Short', size: 2, nodeType: Types.uint16() },
   { name: 'Long', size: 4, nodeType: Types.uint32() },
   { name: 'Rational', size: 8, nodeType: Types.uint32(2) }, // (2 longs), first half is numerator, second is denominator.
-  { name: 'SByte', size: 1, nodeType: Types.int8 },
-  { name: 'Undefined', size: 1, nodeType: Types.uint8 }, // (8bit void type)
-  { name: 'SShort', size: 2, nodeType: Types.int16 },
-  { name: 'SLong', size: 4, nodeType: Types.int32 },
+  { name: 'SByte', size: 1, nodeType: Types.int8() },
+  { name: 'Undefined', size: 1, nodeType: Types.uint8() }, // (8bit void type)
+  { name: 'SShort', size: 2, nodeType: Types.int16() },
+  { name: 'SLong', size: 4, nodeType: Types.int32() },
   { name: 'SRational', size: 8, nodeType: Types.int32(2) }, // (2 slongs)
-  { name: 'Float', size: 4, nodeType: Types.float },
-  { name: 'Double', size: 8, nodeType: Types.double },
+  { name: 'Float', size: 4, nodeType: Types.float() },
+  { name: 'Double', size: 8, nodeType: Types.double() },
 ];
 
 function getType(typeId) {

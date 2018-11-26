@@ -19,17 +19,53 @@ function decode(fileData) {
 
     const buffer = fileData.slice(currentOffset, currentOffset + byteSize);
     const ifdEntry = parseObject(buffer, ImageFileDirectoryEntry);
-    console.log(ifdEntry, Tag.getName(ifdEntry.tag), Tag.getType(ifdEntry.type));
+    // console.log(ifdEntry, Tag.getName(ifdEntry.tag), Tag.getType(ifdEntry.type));
     ifdEntries.push(ifdEntry);
   }
 
-  // Read anymore IFDs that come after the first one.
+  let dng = new Dng();
+  ifdEntries.forEach((ifdEntry) => {
+    applyEntry(fileData, dng, ifdEntry);
+  });
 
-  // console.log(ifdEntries);
+  console.log(dng);
+}
+
+// Modify DNG in place.
+function applyEntry(fileData, dng, ifdEntry) {
+  const value = readEntryData(fileData, ifdEntry);
+
+  switch (ifdEntry.tag) {
+    case 256: dng.width = value; break;
+    case 257: dng.height = value; break;
+    default: break;
+  }
 }
 
 function readEntryData(fileData, ifdEntry) {
-  
+  const { tag: tagId, type: typeId, count, valueOffset } = ifdEntry;
+  const type = Tag.getType(typeId);
+
+  if (!type) {
+    return undefined;
+  }
+
+  // If the type size * count is less than 4 bytes the actual value is stored
+  // in the vlaue offset instead of a literal offset. 🤔 Pretty funny.
+  const totalSize = type.size * count;
+  if (totalSize <= 4) {
+    return valueOffset;
+  }
+
+  let layout = [];
+  for (let index = 0; index < count; index += 1) {
+    layout.push(type.nodeType);
+  }
+
+  const offsetStart = ifdEntry.valueOffset;
+  const offsetEnd = offsetStart + totalSize;
+  const dataSegment = fileData.slice(offsetStart, offsetEnd);
+  return Types.readLayout(layout, dataSegment, false);
 }
 
 class Dng {
