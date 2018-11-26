@@ -6,7 +6,7 @@ const Ppm = require('./ppm.js');
 const Color = require('./color.js');
 const { Image, makeImage } = require('./image.js');
 
-test('./office.dng');
+test('./L1004432.DNG');
 
 async function test(filename) {
   const fileSize = fs.statSync(filename).size;
@@ -14,16 +14,16 @@ async function test(filename) {
   const buffer = Buffer.alloc(fileSize);
   fs.readSync(fileHandle, buffer, 0, fileSize, 0);
 
-  const image = Dng.decode(buffer);
+  const [image] = Dng.decode(buffer);
 
   // const image = await Png.decode(buffer);
   // const modifiedImage = bloom(image);
 
-  // const ppmData = Ppm.encode(blurredImage);
+  const ppmData = Ppm.encode(image);
   // fs.writeFileSync('./output.ppm', ppmData);
 
   // const pngData = Png.encode(modifiedImage);
-  // fs.writeFileSync('./output.png', pngData);
+  fs.writeFileSync('./output.ppm', ppmData);
 }
 
 function clamp(value, min, max) {

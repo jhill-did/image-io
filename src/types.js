@@ -32,6 +32,12 @@ function readLayout(layout, buffer, bigEndian = true) {
 
     // Special case for returning a string to ascii types.
     if (type.name === 'ascii') {
+      // Remove ascii null terminators.
+      const terminatorIndex = container.indexOf('\u0000');
+      if (terminatorIndex > -1) {
+        container.splice(terminatorIndex, 1);
+      }
+
       return container.join('');
     }
 

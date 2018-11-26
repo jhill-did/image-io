@@ -22,6 +22,9 @@ function encode(image) {
         blue = blue * multiplier;
       }
 
+      green = green !== undefined ? green : red;
+      blue = blue !== undefined ? blue : red;
+
       ppmData += `${red} ${green} ${blue}\n`;
     }
   }
