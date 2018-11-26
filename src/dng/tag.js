@@ -73,10 +73,10 @@ function getName(tag) {
 }
 
 const typeMap = [
-  { name: 'Byte', size: 1, nodeType: Types.uint8() },
-  { name: 'ASCII', size: 1, nodeType: Types.ascii() },
-  { name: 'Short', size: 2, nodeType: Types.uint16() },
-  { name: 'Long', size: 4, nodeType: Types.uint32() },
+  { name: 'Byte', size: 1, nodeType: Types.uint8() }, // 1
+  { name: 'ASCII', size: 1, nodeType: Types.ascii() }, // 2
+  { name: 'Short', size: 2, nodeType: Types.uint16() }, // 3
+  { name: 'Long', size: 4, nodeType: Types.uint32() }, // 4
   { name: 'Rational', size: 8, nodeType: Types.uint32(2) }, // (2 longs), first half is numerator, second is denominator.
   { name: 'SByte', size: 1, nodeType: Types.int8() },
   { name: 'Undefined', size: 1, nodeType: Types.uint8() }, // (8bit void type)
@@ -88,7 +88,7 @@ const typeMap = [
 ];
 
 function getType(typeId) {
-  return typeMap[typeId + 1];
+  return typeMap[typeId - 1];
 }
 
 module.exports = { getName, getType };

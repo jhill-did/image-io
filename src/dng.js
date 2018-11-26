@@ -19,7 +19,7 @@ function decode(fileData) {
 
     const buffer = fileData.slice(currentOffset, currentOffset + byteSize);
     const ifdEntry = parseObject(buffer, ImageFileDirectoryEntry);
-    // console.log(ifdEntry, Tag.getName(ifdEntry.tag), Tag.getType(ifdEntry.type));
+    console.log(ifdEntry, Tag.getName(ifdEntry.tag));
     ifdEntries.push(ifdEntry);
   }
 
@@ -38,6 +38,10 @@ function applyEntry(fileData, dng, ifdEntry) {
   switch (ifdEntry.tag) {
     case 256: dng.width = value; break;
     case 257: dng.height = value; break;
+    case 258:
+      // For now, assume each sample has the same bit size.
+      dng.bitsPerSample = value[0];
+      dng.bytesPerSample = value[0] / 8;
     default: break;
   }
 }
@@ -62,9 +66,12 @@ function readEntryData(fileData, ifdEntry) {
     layout.push(type.nodeType);
   }
 
+  console.log(tagId, layout);
+  console.log(tagId, type, totalSize);
   const offsetStart = ifdEntry.valueOffset;
   const offsetEnd = offsetStart + totalSize;
   const dataSegment = fileData.slice(offsetStart, offsetEnd);
+  console.log(tagId, dataSegment);
   return Types.readLayout(layout, dataSegment, false);
 }
 
@@ -72,6 +79,8 @@ class Dng {
   constructor() {
     this.width = null;
     this.height = null;
+    this.bitsPerSample = null;
+    this.bytesPerSample = null;
   }
 }
 
