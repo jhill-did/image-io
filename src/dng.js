@@ -8,9 +8,170 @@ const Util = require('./util.js');
 
 const { Image } = require('./image.js');
 
+function decode(fileData) {
+  headerBuffer = fileData.slice(0, FileHeader.byteSize);
+  const fileHeader = parseObject(headerBuffer, FileHeader);
+  console.log(fileHeader);
+
+  // dngs contain our still encoded DNG objects, images will hold our decoded
+  // images as we go.
+  let dngs = [];
+  let images = [];
+
+  // We start our ifdOffset using the one specified in the header.
+  // The end of the first IFD tells us where to find the next IFD if one exists.
+  let ifdOffset = fileHeader.ifdOffset;
+
+  // Keep reading IFDs while we still have them.
+  while (ifdOffset !== 0) {
+    const [ifdEntries, nextIfdOffset] = parseIfd(fileData, ifdOffset);
+    ifdOffset = nextIfdOffset;
+    console.log('nextIfdOffset', ifdOffset);
+
+    // Add a new dng and apply the IFD entries to it.
+    console.log('Applying entries.');
+    const dng = dngs[dngs.push(new Dng()) - 1];
+    ifdEntries.forEach((ifdEntry) => {
+      applyEntry(fileData, dng, ifdEntry);
+    });
+
+    // Read strips from dng to make scanlines for abstract image.
+    const offsetStart = Array.isArray(dng.stripOffsets) ? dng.stripOffsets[0] : dng.stripOffsets;
+    const offsetEnd = (offsetStart
+      + Array.isArray(dng.stripByteCounts) ?
+        dng.stripByteCounts[0] :
+        dng.stripByteCounts
+    );
+
+    console.log('Reading strips.');
+    const stripData = fileData.slice(offsetStart, offsetEnd);
+
+    /*
+    const getFilterColor = (x, y) => {
+      const isEven = value => value % 2 === 0;
+
+      return isEven(x) ?
+        (isEven(y) ? [1, 0, 0] : [0, 1, 0]) :
+        (isEven(y) ? [0, 1, 0] : [0, 0, 1]);
+    };*/
+
+    const filterColors = {
+      red : [1, 0, 0],
+      green: [0, 1, 0],
+      blue: [0, 0, 1],
+    };
+
+    const getFilterColor = (x, y) => {
+      if (x > dng.width || y > dng.height || x < 0 || y < 0) {
+        return null;
+      }
+
+      const filter = [
+        [filterColors.red, filterColors.green],
+        [filterColors.green, filterColors.blue],
+      ];
+
+      const height = filter.length;
+      const width = filter[0].length;
+
+      return filter[y % height][x % width];
+    }
+
+    const scale = (vector, scalar) => {
+      return vector.map(component => component * scalar);
+    };
+
+    const average = (list) => {
+      return list.reduce((acc, item) => { return acc + item; }, 0) / list.length;
+    };
+
+    const getPixel = (x, y) => {
+      if (x > dng.width || y > dng.height || x < 0 || y < 0) {
+        return null;
+      }
+
+      const offset = y * dng.width * dng.bytesPerSample * dng.samplesPerPixel
+        + x * dng.bytesPerSample * dng.samplesPerPixel;
+      const end = offset + dng.bytesPerSample * dng.samplesPerPixel;
+      // This is CFA so I know each pixel will be 2 bytes wide.
+
+      const buffer = stripData.slice(offset, end);
+      return buffer.readUInt16LE(0);
+    }
+
+    const getKernel = (x, y) => {
+      return [
+        { x: x - 1, y: y - 1}, // Upper row
+        { x: x, y: y - 1},
+        { x: x + 1, y: y - 1},
+        { x: x - 1, y: y }, // Center row
+        { x, y },
+        { x: x + 1, y: y },
+        { x: x - 1, y: y + 1 }, // Bottom row
+        { x: x, y: y + 1 },
+        { x: x + 1, y: y + 1 },
+      ];
+    }
+
+    console.log('Generating scanlines.\n');
+
+    // Generate scanlines for our abstract image.
+    // Convert CFA to RGB
+    let scanlines = [];
+    for (let y = 0; y < dng.height; y += 1) {
+      const scanline = [];
+      for (let x = 0; x < dng.width; x += 1) {
+        const kernel = getKernel(x, y)
+          .filter(item => item.x >= 0
+            && item.x < dng.width
+            && item.y >= 0
+            && item.y < dng.height
+          );
+
+        const reds = kernel
+          .filter(pos => getFilterColor(pos.x, pos.y) === filterColors.red)
+          .map(pos => getPixel(pos.x, pos.y));
+        const red = average(reds);
+
+        const greens = kernel
+          .filter(pos => getFilterColor(pos.x, pos.y) === filterColors.green)
+          .map(pos => getPixel(pos.x, pos.y));
+        const green = average(greens) / 1.5;
+
+        const blues = kernel
+          .filter(pos => getFilterColor(pos.x, pos.y) === filterColors.blue)
+          .map(pos => getPixel(pos.x, pos.y));
+        const blue = average(blues);
+
+        const pixelComponents = [
+          Math.round(red),
+          Math.round(green),
+          Math.round(blue)
+        ];
+
+        scanline.push(...pixelComponents);
+      }
+
+      if (y % 100 === 0) {
+        console.log(`\b\r${Math.round(y / dng.height * 100)}%`);
+      }
+
+      scanlines.push(scanline);
+    }
+
+    console.log(dng);
+    // images.push(new Image(scanlines, dng.samplesPerPixel, dng.bitsPerSample));
+    images.push(new Image(scanlines, 3, 16));
+    console.log('STEP');
+  }
+
+  console.log('done decoding');
+  return images;
+}
+
 function parseIfd(fileData, offset) {
   // Go to the offset and create an IFD.
-  // Just has a count in it, it's then followed by [count] IFDEntries.
+  // IFDs only have a count in it, it's then followed by [count] IFDEntries.
   const ifdBuffer = fileData.slice(offset);
   const ifd = parseObject(ifdBuffer, ImageFileDirectory);
   const { byteSize } = ImageFileDirectoryEntry;
@@ -33,55 +194,6 @@ function parseIfd(fileData, offset) {
 
   // returns a list of entries, and the next ifd's offset.
   return [ifdEntries, nextOffset];
-}
-
-function decode(fileData) {
-  headerBuffer = fileData.slice(0, FileHeader.byteSize);
-  const fileHeader = parseObject(headerBuffer, FileHeader);
-  console.log(fileHeader);
-
-  // dngs contain our still encoded DNG objects, images will hold our decoded
-  // images as we go.
-  let dngs = [];
-  let images = [];
-
-  // We start our ifdOffset using the one specified in the header.
-  // The end of the first IFD tells us where to find the next IFD if one exists.
-  let ifdOffset = fileHeader.ifdOffset;
-
-  // Keep reading IFDs while we still have them.
-  while (ifdOffset !== 0) {
-    const [ifdEntries, nextIfdOffset] = parseIfd(fileData, ifdOffset);
-    ifdOffset = nextIfdOffset;
-
-    // Add a new dng and apply the IFD entries to it.
-    const dng = dngs[dngs.push(new Dng()) - 1];
-    ifdEntries.forEach((ifdEntry) => {
-      applyEntry(fileData, dng, ifdEntry);
-    });
-
-    // Read strips from dng to make scanlines for abstract image.
-    const offsetStart = Array.isArray(dng.stripOffsets) ? dng.stripOffsets[0] : dng.stripOffsets;
-    const offsetEnd = (offsetStart
-      + Array.isArray(dng.stripByteCounts) ?
-        dng.stripByteCounts[0] :
-        dng.stripByteCounts
-    );
-    const stripData = fileData.slice(offsetStart, offsetEnd);
-
-    let scanlines = [];
-    for (let row = 0; row < dng.height; row += 1) {
-      const offset = row * dng.width * dng.bytesPerSample * dng.samplesPerPixel;
-      const end = offset + dng.width * dng.bytesPerSample * dng.samplesPerPixel;
-      const scanline = stripData.slice(offset, end);
-      scanlines.push(scanline);
-    }
-
-    images.push(new Image(scanlines, dng.samplesPerPixel, dng.bitsPerSample));
-    console.log('STEP');
-  }
-
-  return images;
 }
 
 // Modify DNG in place.
@@ -119,7 +231,10 @@ function applyEntry(fileData, dng, ifdEntry) {
     case 305: dng.software = first(value); break;
     case 306: dng.date = first(value); break;
     case 315: dng.artist = first(value); break;
+    case 33422: dng.cfaPattern = first(value); break;
     case 50706: dng.dngVersion = first(value); break;
+    case 50710: dng.cfaPlaneColor = value; break;
+    case 50711: dng.cfaLayout = value; break;
     default: break;
   }
 }
@@ -195,6 +310,9 @@ class Dng {
     this.orientation = undefined;
     this.planarConfiguration = undefined;
     this.dngVersion = undefined;
+    this.cfaPlaneColor = undefined;
+    this.cfaLayout = undefined;
+    this.cfaPattern = undefined;
   }
 }
 

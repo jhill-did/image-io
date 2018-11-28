@@ -6,7 +6,7 @@ const Ppm = require('./ppm.js');
 const Color = require('./color.js');
 const { Image, makeImage } = require('./image.js');
 
-test('./L1004432.DNG');
+test('./airport1.DNG');
 
 async function test(filename) {
   const fileSize = fs.statSync(filename).size;
@@ -17,9 +17,10 @@ async function test(filename) {
   const [image] = Dng.decode(buffer);
 
   // const image = await Png.decode(buffer);
-  // const modifiedImage = bloom(image);
+  const modifiedImage = bloom(image);
+  //console.log('width', modifiedImage.width);
 
-  const ppmData = Ppm.encode(image);
+  const ppmData = Ppm.encode(modifiedImage);
   // fs.writeFileSync('./output.ppm', ppmData);
 
   // const pngData = Png.encode(modifiedImage);
@@ -30,22 +31,51 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
+function add(imageA, imageB) {
+  // Composite blurred luminance with a clamped add.
+  const { width, height } = imageA;
+  const composite = makeImage(width, height, 3);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const sampleA = imageA.getPixel(x, y);
+      const sampleB = imageB.getPixel(x, y);
+
+      const result = new Color(
+        clamp(sampleB.red + sampleA.red, 0, 255),
+        clamp(sampleB.green + sampleA.green, 0, 255),
+        clamp(sampleB.blue + sampleA.blue, 0, 255),
+      );
+
+      composite.setPixel(x, y, result);
+    }
+  }
+
+  return composite;
+}
+
 function bloom(image) {
   const { width, height } = image;
 
-  const luminanceMap = makeImage(width, height, 1);
+  const luminanceMap = makeImage(width, height, 3, 16);
+  console.log('Generating luminance.');
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const { red, green, blue } = image.getPixel(x, y);
       const luminance = Math.round(0.2126 * red + 0.7152 * green + 0.0722 * blue);
-      const adjustedLuminance = ((luminance / 256) ** 4) * 256
+      // const adjustedLuminance = ((luminance / 256) ** 4) * 256
 
-      luminanceMap.setPixel(x, y, new Color(adjustedLuminance));
+      if (luminance > 255) {
+        luminanceMap.setPixel(x, y, new Color(luminance, luminance, luminance));
+      }
+    }
+
+    if (y % 100 === 0) {
+      console.log(`\b\r${Math.round(y / height * 100)}%`);
     }
   }
 
-  const bloom1 = blur(luminanceMap, 8, 32);
-  const bloom2 = blur(luminanceMap, 4, 32);
+  const bloom1 = blur(luminanceMap, 16, 32);
+  const bloom2 = blur(luminanceMap, 8, 32);
 
   // Composite blurred luminance with a clamped add.
   const compositeA = makeImage(width, height, 3);
@@ -65,6 +95,7 @@ function bloom(image) {
   }
 
   // Composite blurred luminance with a clamped add.
+  console.log('Generating composite.');
   const compositeB = makeImage(width, height, 3);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
@@ -78,6 +109,10 @@ function bloom(image) {
       );
 
       compositeB.setPixel(x, y, result);
+    }
+
+    if (y % 100 === 0) {
+      console.log(`\b\r${Math.round(y / height * 100)}%`);
     }
   }
 
@@ -103,6 +138,7 @@ function blur(image, radius = 8, iterations = 16) {
   const blurredImage = image.clone();
 
   // Apply blur
+  console.log('Applying blur\n');
   const { width, height } = image;
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
@@ -131,6 +167,10 @@ function blur(image, radius = 8, iterations = 16) {
       );
 
       blurredImage.setPixel(x, y, average);
+    }
+
+    if (y % 100 === 0) {
+      console.log(`\b\r${Math.round(y / height * 100)}%`);
     }
   }
 

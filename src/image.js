@@ -3,13 +3,21 @@ const Color = require('./color.js');
 
 class Image {
   constructor(scanlines, channelCount, bitsPerChannel) {
+    // Scanlines are always an array of js numbers.
+    // Not buffers.
     this.scanlines = scanlines;
     this.channelCount = channelCount;
     this.bitsPerChannel = bitsPerChannel;
-    this.bytesPerPixel = channelCount * (bitsPerChannel / 8);
     this.bytesPerChannel = bitsPerChannel / 8;
+    this.bytesPerPixel = channelCount * this.bytesPerChannel;
 
-    this.width = scanlines[0].length / this.bytesPerPixel;
+    // JS doesn't have specifically sized Numbers, so for us each index from
+    // a scanline is going to be one entire channel regardless of the
+    // bits per channel.
+
+    // It'll be up to encoders to translate the bytes per channel into the
+    // appropriate format for an output buffer.
+    this.width = scanlines[0].length / channelCount;
     this.height = scanlines.length;
   }
 
@@ -22,11 +30,9 @@ class Image {
       return null;
     }
 
-    let pixelData = [];
-    for (let index = 0; index < this.channelCount; index += 1) {
-      const bufferOffset = index * this.bytesPerChannel;
-      pixelData[index] = this.scanlines[y][x * this.bytesPerPixel + bufferOffset];
-    }
+    const offset = x * this.channelCount;
+    const end = offset + this.channelCount;
+    const pixelData = this.scanlines[y].slice(offset, end);
 
     return new Color(...pixelData);
   }
@@ -39,7 +45,7 @@ class Image {
     const { red, green, blue, alpha } = color;
 
     const scanline = this.scanlines[y];
-    const offset = x * this.bytesPerPixel;
+    const offset = x * this.channelCount;
     if (red !== undefined) { scanline[offset + 0] = red; }
     if (green !== undefined) { scanline[offset + 1] = green; }
     if (blue !== undefined) { scanline[offset + 2] = blue; }
@@ -60,14 +66,14 @@ class Image {
   }
 }
 
-function makeImage(width, height, channelCount = 4) {
+function makeImage(width, height, channelCount = 4, bitsPerChannel = 8) {
   const scanlines = [];
   for (let row = 0; row < height; row += 1) {
-    scanlines.push(Buffer.alloc(width * channelCount));
+    scanlines.push(Array(width * channelCount).fill(0));
   }
 
   console.log(width, height, channelCount);
-  return new Image(scanlines, channelCount, 8);
+  return new Image(scanlines, channelCount, bitsPerChannel);
 }
 
 module.exports = { Image, makeImage };
