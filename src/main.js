@@ -4,9 +4,20 @@ const Png = require('./png.js');
 const Dng = require('./dng.js');
 const Ppm = require('./ppm.js');
 const Color = require('./color.js');
+const Util = require('./util.js')
 const { Image, makeImage } = require('./image.js');
 
-test('./airport1.DNG');
+// test('./airport1.DNG');
+hmm();
+
+function hmm() {
+  let image = makeImage(100, 100, 1, 16);
+  image.setPixel(25, 25, new Color(20000));
+  image.setPixel(75, 75, new Color(250));
+  let blurred = blur(image);
+  let ppmData = Ppm.encode(blurred);
+  fs.writeFileSync('./blurred.ppm', ppmData);
+}
 
 async function test(filename) {
   const fileSize = fs.statSync(filename).size;
@@ -17,7 +28,7 @@ async function test(filename) {
   const [image] = Dng.decode(buffer);
 
   // const image = await Png.decode(buffer);
-  const modifiedImage = bloom(image);
+  const modifiedImage = tonemap(image);
   //console.log('width', modifiedImage.width);
 
   const ppmData = Ppm.encode(modifiedImage);
@@ -25,6 +36,33 @@ async function test(filename) {
 
   // const pngData = Png.encode(modifiedImage);
   fs.writeFileSync('./output.ppm', ppmData);
+}
+
+function tonemap(image) {
+  const adjuster = (value) => {
+    return value;
+  };
+
+  const copy = image.clone();
+  let maxValue = Util.getMaxValue(image.bytesPerChannel);
+  for (let y = 0; y < copy.height; y += 1) {
+    for (let x = 0; x < copy.width; x += 1) {
+      let { red, green, blue } = image.getPixel(x, y);
+      const luminance = Math.round(0.2126 * red + 0.7152 * green + 0.0722 * blue);
+
+      red = adjuster(red / maxValue) * 256;
+      green = adjuster(green / maxValue) * 256;
+      blue = adjuster(blue / maxValue) * 256;
+
+      copy.setPixel(x, y, new Color(
+        Math.round(red),
+        Math.round(green),
+        Math.round(blue),
+      ));
+    }
+  }
+
+  return copy;
 }
 
 function clamp(value, min, max) {
