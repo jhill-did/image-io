@@ -1,7 +1,7 @@
 {
-  "name": "imgio",
+  "name": "image-io",
   "version": "1.0.0",
-  "description": "An easy Image input/output library for NodeJS.",
+  "description": "An easy Image input/output library for Typescript.",
   "main": "./src/index.ts",
   "directories": {
     "example": "examples"
@@ -12,15 +12,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/jhill-did/imgio.git"
+    "url": "git+https://github.com/jhill-did/image-io.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/jhill-did/imgio/issues"
+    "url": "https://github.com/jhill-did/image-io/issues"
   },
-  "homepage": "https://github.com/jhill-did/imgio#readme",
+  "homepage": "https://github.com/jhill-did/image-io#readme",
   "devDependencies": {
     "@types/js-crc": "^0.2.0",
     "@types/pako": "^2.0.0",
