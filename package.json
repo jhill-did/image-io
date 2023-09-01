@@ -1,0 +1,35 @@
+{
+  "name": "imgio",
+  "version": "1.0.0",
+  "description": "An easy Image input/output library for NodeJS.",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jhill-did/imgio.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jhill-did/imgio/issues"
+  },
+  "homepage": "https://github.com/jhill-did/imgio#readme",
+  "devDependencies": {
+    "@types/js-crc": "^0.2.0",
+    "@types/pako": "^2.0.0",
+    "vite": "^4.4.9"
+  },
+  "dependencies": {
+    "crc": "^4.3.2",
+    "crc-32": "^1.2.2",
+    "js-crc": "^0.2.0",
+    "pako": "^2.1.0"
+  }
+}

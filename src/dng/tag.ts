@@ -1,0 +1,117 @@
+import { types } from '../types';
+
+const nameMap: Record<string, string> = {
+  '254': 'NewSubfileType',
+  '255': 'SubfileType',
+  '256': 'ImageWidth',
+  '257': 'ImageLength',
+  '258': 'BitsPerSample',
+  '259': 'Compression',
+  '262': 'PhotometricInterpretation',
+  '263': 'Threshholding',
+  '264': 'CellWidth',
+  '265': 'CellLength',
+  '266': 'FillOrder',
+  '270': 'ImageDescription',
+  '271': 'Make',
+  '272': 'Model',
+  '273': 'StripOffsets',
+  '274': 'Orientation',
+  '277': 'SamplesPerPixel',
+  '278': 'RowsPerStrip',
+  '279': 'StripByteCounts',
+  '280': 'MinSampleValue',
+  '281': 'MaxSampleValue',
+  '282': 'XResolution',
+  '283': 'YResolution',
+  '284': 'PlanarConfiguration',
+  '288': 'FreeOffsets',
+  '289': 'FreeByteCounts',
+  '290': 'GrayResponseUnit',
+  '291': 'GrayResponseCurve',
+  '296': 'ResolutionUnit',
+  '305': 'Software',
+  '306': 'DateTime',
+  '315': 'Artist',
+  '316': 'HostComputer',
+  '320': 'ColorMap',
+  '330': 'SubIFDs',
+  '338': 'ExtraSamples',
+  '529': 'YCbCrCoefficients',
+  '530': 'YCbCrSubSampling',
+  '531': 'YCbCrPositioning',
+  '532': 'ReferenceBlackWhite',
+  '700': 'XMP',
+  '33421': 'CFARepeatPatternDim',
+  '33422': 'CFAPattern',
+  '33434': 'ExposureTime',
+  '33437': 'FNumber',
+  '34855': 'ISOSpeedRatings',
+  '34859': 'SelfTimeMode',
+  '36867': 'DateTimeOriginal',
+  '37386': 'FocalLength',
+  '37390': 'FocalPlaneXResolution',
+  '37391': 'FocalPlaneYResolution',
+  '37392': 'FocalPlaneResolutionUnit',
+  '37398': 'TIFF/EPStandardID',
+  '33432': 'Copyright',
+  '34665': 'Exif IFD',
+  '34853': 'GPS IFD',
+  '50706': 'DNGVersion',
+  '50707': 'DNGBackwardVersion',
+  '50708': 'UniqueCameraModel',
+  '50710': 'CFAPlaneColor',
+  '50711': 'CFALayout',
+  '50713': 'BlackLevelRepeatDim',
+  '50714': 'BlackLevel',
+  '50717': 'WhiteLevel',
+  '50718': 'DefaultScale',
+  '50719': 'DefaultCropOrigin',
+  '50720': 'DefaultCropSize',
+  '50721': 'ColorMatrix1',
+  '50722': 'ColorMatrix2',
+  '50723': 'CameraCalibration1',
+  '50724': 'CameraCalibration2',
+  '50727': 'AnalogBalance',
+  '50728': 'AsShotNeutral',
+  '50730': 'BaselineExposure',
+  '50731': 'BaselineNoise',
+  '50732': 'BaselineSharpness',
+  '50734': 'LinearResponseLimit',
+  '50735': 'CameraSerialNumber',
+  '50739': 'ShadowScale',
+  '50741': 'MakerNoteSafety',
+  '50778': 'CalibrationIlluminant1',
+  '50779': 'CalibrationIlluminant2',
+  '50781': 'RawDataUniqueID',
+  '50936': undefined,
+  '50941': undefined,
+  '50964': undefined,
+  '50965': undefined,
+  '51009': undefined,
+  '51041': undefined,
+  '51111': undefined,
+}
+
+export function getName(tag: number) {
+  return nameMap[`${tag}`];
+}
+
+const typeMap = [
+  { name: 'Byte', size: 1, nodeType: types.uint8() }, // 1
+  { name: 'ASCII', size: 1, nodeType: types.ascii() }, // 2
+  { name: 'Short', size: 2, nodeType: types.uint16() }, // 3
+  { name: 'Long', size: 4, nodeType: types.uint32() }, // 4
+  { name: 'Rational', size: 8, nodeType: types.uint32(2) }, // (2 longs), first half is numerator, second is denominator.
+  { name: 'SByte', size: 1, nodeType: types.int8() },
+  { name: 'Undefined', size: 1, nodeType: types.uint8() }, // (8bit void type)
+  { name: 'SShort', size: 2, nodeType: types.int16() },
+  { name: 'SLong', size: 4, nodeType: types.int32() },
+  { name: 'SRational', size: 8, nodeType: types.int32(2) }, // (2 slongs)
+  { name: 'Float', size: 4, nodeType: types.float() },
+  { name: 'Double', size: 8, nodeType: types.double() },
+];
+
+export function getType(typeId: number) {
+  return typeMap[typeId - 1];
+}
