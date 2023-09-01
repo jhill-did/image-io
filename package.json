@@ -1,6 +1,6 @@
 {
   "name": "image-io",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "An easy Image input/output library for Typescript.",
   "main": "./src/index.ts",
   "directories": {

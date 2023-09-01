@@ -85,6 +85,28 @@ export function makeImage(
     scanlines.push(new Uint8Array(width * channelCount));
   }
 
-  console.log(width, height, channelCount);
   return new Image(scanlines, channelCount, bitsPerChannel);
+}
+
+export function makeImageFromBuffer(
+  data: Uint8Array,
+  width: number,
+  height: number,
+) {
+  const channelCount = data.length / width / height;
+
+  const scanlineWidth = width * channelCount;
+
+  let scanlines: Uint8Array[] = [];
+  for (let line = height - 1; line >= 0; line -= 1) {
+    const scanline = new Uint8Array(scanlineWidth);
+    for (let component = 0; component < scanlineWidth; component += 1) {
+      const sourceOffset = ((line * scanlineWidth) + component);
+      scanline[component] = data[sourceOffset];
+    }
+
+    scanlines.push(scanline);
+  }
+
+  return new Image(scanlines, channelCount, 8);
 }
