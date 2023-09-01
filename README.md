@@ -1,2 +1,2 @@
-# imgio
-An easy Image input/output library for NodeJS.
+# image-io
+An easy Image input/output library for Typescript.
